@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คำนวณยอดขายฝากอสังหาริมทรัพย์</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: #f0f4f8;
+    min-height: 100vh;
+    padding: 24px 16px;
+    color: #1a202c;
+  }
+
+  .container {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+    color: #718096;
+    margin-bottom: 24px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  .card h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  .field {
+    margin-bottom: 14px;
+  }
+
+  label {
+    display: block;
+    font-size: 0.85rem;
+    color: #4a5568;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  .input-wrap {
+    position: relative;
+  }
+
+  input[type="number"] {
+    width: 100%;
+    padding: 10px 48px 10px 12px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    color: #2d3748;
+    transition: border 0.2s;
+    appearance: none;
+    -moz-appearance: textfield;
+  }
+
+  input[type="number"]:focus {
+    outline: none;
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66,153,225,0.15);
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  .unit {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.8rem;
+    color: #a0aec0;
+  }
+
+  .hint {
+    font-size: 0.78rem;
+    color: #a0aec0;
+    margin-top: 3px;
+  }
+
+  .row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 14px;
+    background: #3182ce;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    margin-top: 4px;
+  }
+
+  .btn:hover { background: #2b6cb0; }
+  .btn:active { transform: scale(0.98); }
+
+  /* Results */
+  #results { display: none; }
+
+  .section-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+  }
+
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f7fafc;
+    font-size: 0.92rem;
+  }
+
+  .result-row:last-child { border-bottom: none; }
+
+  .result-row .label { color: #4a5568; }
+
+  .result-row .value {
+    font-weight: 600;
+    color: #2d3748;
+  }
+
+  .result-row.negative .value { color: #e53e3e; }
+  .result-row.deduct .value { color: #e53e3e; }
+  .result-row.sub { padding-left: 14px; }
+  .result-row.sub .label { color: #718096; font-size: 0.87rem; }
+  .result-row.sub .value { color: #718096; font-size: 0.87rem; font-weight: 500; }
+
+  .highlight-box {
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-top: 4px;
+  }
+
+  .highlight-box.green {
+    background: #f0fff4;
+    border: 1.5px solid #9ae6b4;
+  }
+
+  .highlight-box.orange {
+    background: #fffaf0;
+    border: 1.5px solid #fbd38d;
+  }
+
+  .highlight-box.red {
+    background: #fff5f5;
+    border: 1.5px solid #feb2b2;
+  }
+
+  .highlight-box .big-label {
+    font-size: 0.82rem;
+    color: #718096;
+    margin-bottom: 2px;
+  }
+
+  .highlight-box .big-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  .highlight-box.green .big-value { color: #276749; }
+  .highlight-box.orange .big-value { color: #c05621; }
+  .highlight-box.red .big-value { color: #c53030; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
+
+  .divider {
+    height: 1px;
+    background: #e2e8f0;
+    margin: 14px 0;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  .tag.blue { background: #ebf8ff; color: #2b6cb0; }
+
+  .redeem-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-top: 8px; }
+  .redeem-table th {
+    background: #edf2f7;
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 600;
+    color: #4a5568;
+  }
+  .redeem-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #f7fafc;
+    color: #2d3748;
+  }
+  .redeem-table tr:last-child td { border-bottom: none; }
+  .redeem-table tr:hover td { background: #f7fafc; }
+  .redeem-table td.num { text-align: right; font-weight: 500; }
+  .redeem-table td.highlight { font-weight: 700; color: #c05621; }
+
+  .toggle-btn {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f7fafc;
+    color: #718096;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+
+  .toggle-btn.active {
+    background: #ebf8ff;
+    border-color: #4299e1;
+    color: #2b6cb0;
+    font-weight: 600;
+  }
+
+  .toggle-btn:hover:not(.active) {
+    background: #edf2f7;
+    border-color: #cbd5e0;
+  }
+
+  @media (max-width: 480px) {
+    .row-2, .two-col { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🏠 คำนวณขายฝากอสังหาริมทรัพย์</h1>
+  <p class="subtitle">คำนวณยอดรับเงินสด ดอกเบี้ย และยอดไถ่ถอน</p>
+
+  <!-- Input Card -->
+  <div class="card">
+    <h2>ข้อมูลสัญญาขายฝาก</h2>
+
+    <div class="field">
+      <label>ยอดขายฝาก (วงเงินต้น)</label>
+      <div class="input-wrap">
+        <input type="number" id="principal" value="1500000" min="0" step="10000" oninput="calculate()">
+        <span class="unit">บาท</span>
+      </div>
+    </div>
+
+    <div class="row-2">
+      <div class="field">
+        <label>เงินปากถุง (%)</label>
+        <div class="input-wrap">
+          <input type="number" id="feeRate" value="5" min="0" max="100" step="0.1" oninput="calculate()">
+          <span class="unit">%</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>ดอกเบี้ย (%/เดือน)</label>
+        <div class="input-wrap">
+          <input type="number" id="interestRate" value="1.5" min="0" max="100" step="0.1" oninput="calculate()">
+          <span class="unit">%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="row-2">
+      <div class="field">
+        <label>เก็บดอกล่วงหน้า (เดือน)</label>
+        <div class="input-wrap">
+          <input type="number" id="advanceMonths" value="3" min="0" max="12" step="1" oninput="calculate()">
+          <span class="unit">เดือน</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>ระยะเวลาสัญญา (เดือน)</label>
+        <div class="input-wrap">
+          <input type="number" id="contractMonths" value="12" min="1" max="36" step="1" oninput="calculate()">
+          <span class="unit">เดือน</span>
+        </div>
+        <p class="hint">ขั้นต่ำไถ่ก่อน = ครึ่งสัญญา (ไม่น้อยกว่า 6 เดือน)</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ค่าธรรมเนียมที่ดิน -->
+  <div class="card">
+    <h2>🏛️ ค่าธรรมเนียมที่ดิน</h2>
+    <div style="display:flex;gap:6px;margin-bottom:16px">
+      <button type="button" class="toggle-btn active" id="btn-reduced" onclick="setLandFeeMode('reduced')">🎉 ช่วงลดค่าโอน</button>
+      <button type="button" class="toggle-btn" id="btn-normal" onclick="setLandFeeMode('normal')">📋 ปกติ</button>
+    </div>
+    <div class="row-2">
+      <div class="field">
+        <label>ค่าธรรมเนียมโอน</label>
+        <div class="input-wrap">
+          <input type="number" id="feeTransfer" value="0.01" min="0" step="0.01" oninput="calculate()">
+          <span class="unit">%</span>
+        </div>
+        <p class="hint" id="hint-transfer">≈ 0 บาท | ปกติ 2% | ช่วงลด 0.01%</p>
+      </div>
+      <div class="field">
+        <label>ภาษีธุรกิจเฉพาะ (ภธ.)</label>
+        <div class="input-wrap">
+          <input type="number" id="feeSBT" value="3.3" min="0" step="0.1" oninput="calculate()">
+          <span class="unit">%</span>
+        </div>
+        <p class="hint" id="hint-sbt">≈ 0 บาท</p>
+      </div>
+    </div>
+    <div class="row-2">
+      <div class="field">
+        <label>ภาษีเงินได้ หัก ณ ที่จ่าย</label>
+        <div class="input-wrap">
+          <input type="number" id="feeWHT" value="0.5" min="0" step="0.1" oninput="calculate()">
+          <span class="unit">%</span>
+        </div>
+        <p class="hint" id="hint-wht">≈ 0 บาท | คำนวณตามขั้นบันได</p>
+      </div>
+      <div class="field">
+        <label>ค่าอากรแสตมป์ / อื่นๆ</label>
+        <div class="input-wrap">
+          <input type="number" id="feeOther" value="0.03" min="0" step="0.01" oninput="calculate()">
+          <span class="unit">%</span>
+        </div>
+        <p class="hint" id="hint-other">≈ 0 บาท</p>
+      </div>
+    </div>
+    <div style="background:#f7fafc;border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+      <span style="font-size:0.88rem;color:#4a5568;font-weight:600">รวมค่าธรรมเนียมที่ดิน</span>
+      <span style="font-size:1.05rem;font-weight:700;color:#2d3748" id="r-landTotal">0 บาท</span>
+    </div>
+  </div>
+
+  <button class="btn" onclick="calculate()">คำนวณ</button>
+
+  <!-- Results -->
+  <div id="results">
+
+    <!-- ค่าใช้จ่ายแรกเข้า -->
+    <div class="card" style="margin-top:20px">
+      <h2>💸 ค่าใช้จ่ายแรกเข้า</h2>
+      <div class="result-row sub">
+        <span class="label">เงินปากถุง (<span id="r-feeRate"></span>%)</span>
+        <span class="value" id="r-fee"></span>
+      </div>
+      <div class="result-row sub">
+        <span class="label">ดอกล่วงหน้า <span id="r-advMonths"></span> เดือน</span>
+        <span class="value" id="r-advInterest"></span>
+      </div>
+      <div class="result-row sub">
+        <span class="label">ค่าที่ดิน / ค่าธรรมเนียม</span>
+        <span class="value" id="r-landFee"></span>
+      </div>
+      <div class="divider"></div>
+      <div class="result-row">
+        <span class="label" style="font-weight:600">รวมค่าใช้จ่าย</span>
+        <span class="value deduct" id="r-totalDeduct"></span>
+      </div>
+
+      <div style="margin-top:12px">
+        <div class="highlight-box green">
+          <div class="big-label">💵 ลูกค้ารับเงินสด</div>
+          <div class="big-value" id="r-cashReceived"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ยอดไถ่ถอน -->
+    <div class="card">
+      <h2>🔑 ยอดไถ่ถอนเมื่อครบสัญญา</h2>
+      <div class="result-row sub">
+        <span class="label">ดอกเบี้ย/เดือน</span>
+        <span class="value" id="r-monthlyInt"></span>
+      </div>
+      <div class="result-row sub">
+        <span class="label">ดอกคงค้าง <span id="r-remainMonths"></span> เดือน (หักล่วงหน้าแล้ว)</span>
+        <span class="value" id="r-remainInt"></span>
+      </div>
+      <div class="result-row sub">
+        <span class="label">เงินต้น</span>
+        <span class="value" id="r-principal2"></span>
+      </div>
+      <div class="divider"></div>
+      <div class="highlight-box orange" style="margin-top:0">
+        <div class="big-label">🏦 ยอดไถ่ถอนเมื่อครบสัญญา</div>
+        <div class="big-value" id="r-fullRedeem"></div>
+      </div>
+    </div>
+
+    <!-- ไถ่ก่อนกำหนด -->
+    <div class="card">
+      <h2>⏰ ตารางไถ่ก่อนกำหนด</h2>
+      <p style="font-size:0.83rem;color:#718096;margin-bottom:10px">ขั้นต่ำ <span id="r-minMonths"></span> เดือน | เกินขั้นต่ำคิดดอกตามจริง</p>
+      <table class="redeem-table">
+        <thead>
+          <tr>
+            <th>เดือนที่</th>
+            <th style="text-align:right">ดอกสะสม</th>
+            <th style="text-align:right">ยอดไถ่</th>
+            <th style="text-align:right">หมายเหตุ</th>
+          </tr>
+        </thead>
+        <tbody id="r-redeemTable"></tbody>
+      </table>
+    </div>
+
+    <!-- สรุป -->
+    <div class="card">
+      <h2>📊 สรุปรายได้นักลงทุน (ครบสัญญา)</h2>
+      <div class="result-row sub">
+        <span class="label">ดอกเบี้ยล่วงหน้า (<span id="r-advMonths2"></span> เดือน)</span>
+        <span class="value" id="r-advIntSummary"></span>
+      </div>
+      <div class="result-row sub">
+        <span class="label">ดอกเบี้ยคงค้าง (<span id="r-remainMonths2"></span> เดือน)</span>
+        <span class="value" id="r-remainIntSummary"></span>
+      </div>
+      <div class="divider"></div>
+      <div class="result-row">
+        <span class="label" style="font-weight:600">รายได้ดอกเบี้ยรวม</span>
+        <span class="value" style="color:#276749;font-size:1.1rem" id="r-profit"></span>
+      </div>
+      <div class="result-row">
+        <span class="label" style="font-weight:600">Yield ต่อปี</span>
+        <span class="value" style="color:#2b6cb0;font-size:1.1rem" id="r-yield"></span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function fmt(n) {
+  return n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' บาท';
+}
+
+function calculate() {
+  const principal = parseFloat(document.getElementById('principal').value) || 0;
+  const feeRate = parseFloat(document.getElementById('feeRate').value) || 0;
+  const interestRate = parseFloat(document.getElementById('interestRate').value) || 0;
+  const advanceMonths = parseInt(document.getElementById('advanceMonths').value) || 0;
+  const feeTransferPct = parseFloat(document.getElementById('feeTransfer').value) || 0;
+  const feeSBTPct      = parseFloat(document.getElementById('feeSBT').value) || 0;
+  const feeWHTPct      = parseFloat(document.getElementById('feeWHT').value) || 0;
+  const feeOtherPct    = parseFloat(document.getElementById('feeOther').value) || 0;
+  const feeTransfer = principal * feeTransferPct / 100;
+  const feeSBT      = principal * feeSBTPct / 100;
+  const feeWHT      = principal * feeWHTPct / 100;
+  const feeOther2   = principal * feeOtherPct / 100;
+  const landFee     = feeTransfer + feeSBT + feeWHT + feeOther2;
+  document.getElementById('hint-transfer').textContent = '≈ ' + feeTransfer.toLocaleString('th-TH',{maximumFractionDigits:0}) + ' บาท | ปกติ 2% | ช่วงลด 0.01%';
+  document.getElementById('hint-sbt').textContent      = '≈ ' + feeSBT.toLocaleString('th-TH',{maximumFractionDigits:0}) + ' บาท';
+  document.getElementById('hint-wht').textContent      = '≈ ' + feeWHT.toLocaleString('th-TH',{maximumFractionDigits:0}) + ' บาท | คำนวณตามขั้นบันได';
+  document.getElementById('hint-other').textContent    = '≈ ' + feeOther2.toLocaleString('th-TH',{maximumFractionDigits:0}) + ' บาท';
+  document.getElementById('r-landTotal').textContent = landFee.toLocaleString('th-TH', {maximumFractionDigits:0}) + ' บาท';
+  const contractMonths = parseInt(document.getElementById('contractMonths').value) || 12;
+
+  const fee = principal * feeRate / 100;
+  const monthlyInt = principal * interestRate / 100;
+  const advInterest = monthlyInt * advanceMonths;
+  const totalDeduct = fee + advInterest + landFee;
+  const cashReceived = principal - totalDeduct;
+
+  const remainMonths = contractMonths - advanceMonths;
+  const remainInt = monthlyInt * (remainMonths > 0 ? remainMonths : 0);
+  const fullRedeem = principal + remainInt;
+
+  const totalInt = monthlyInt * contractMonths;
+  const profit = totalInt; // นักลงทุนได้เฉพาะดอกเบี้ย
+  const yieldPct = principal > 0 ? (totalInt / principal * 100 / contractMonths * 12) : 0;
+
+  // Min early redemption = half of contract but at least 6 months
+  const minMonths = Math.max(6, Math.ceil(contractMonths / 2));
+
+  // Update DOM
+  document.getElementById('r-feeRate').textContent = feeRate;
+  document.getElementById('r-fee').textContent = fmt(fee);
+  document.getElementById('r-advMonths').textContent = advanceMonths;
+  document.getElementById('r-advInterest').textContent = fmt(advInterest);
+  document.getElementById('r-landFee').textContent = fmt(landFee);
+  document.getElementById('r-totalDeduct').textContent = fmt(totalDeduct);
+  document.getElementById('r-cashReceived').textContent = fmt(cashReceived);
+
+  document.getElementById('r-monthlyInt').textContent = fmt(monthlyInt);
+  document.getElementById('r-remainMonths').textContent = remainMonths > 0 ? remainMonths : 0;
+  document.getElementById('r-remainInt').textContent = fmt(remainInt);
+  document.getElementById('r-principal2').textContent = fmt(principal);
+  document.getElementById('r-fullRedeem').textContent = fmt(fullRedeem);
+
+  document.getElementById('r-minMonths').textContent = minMonths;
+
+  document.getElementById('r-advMonths2').textContent = advanceMonths;
+  document.getElementById('r-advIntSummary').textContent = fmt(advInterest);
+  document.getElementById('r-remainMonths2').textContent = remainMonths > 0 ? remainMonths : 0;
+  document.getElementById('r-remainIntSummary').textContent = fmt(remainInt);
+  document.getElementById('r-profit').textContent = fmt(profit);
+  document.getElementById('r-yield').textContent = yieldPct.toFixed(2) + '%';
+
+  // Redeem table
+  const tbody = document.getElementById('r-redeemTable');
+  tbody.innerHTML = '';
+  for (let m = minMonths; m <= contractMonths; m++) {
+    const intAccrued = monthlyInt * m;
+    const redeemAmt = principal + intAccrued;
+    const note = m === minMonths ? 'ขั้นต่ำ' : m === contractMonths ? 'ครบสัญญา' : '';
+    const isMin = m === minMonths;
+    const isFull = m === contractMonths;
+    tbody.innerHTML += `
+      <tr>
+        <td>${m}</td>
+        <td class="num">${intAccrued.toLocaleString('th-TH', {maximumFractionDigits:0})}</td>
+        <td class="num ${isMin||isFull?'highlight':''}">${redeemAmt.toLocaleString('th-TH', {maximumFractionDigits:0})}</td>
+        <td style="text-align:right;font-size:0.8rem;color:#718096">${note}</td>
+      </tr>`;
+  }
+
+  document.getElementById('results').style.display = 'block';
+}
+
+function setLandFeeMode(mode) {
+  const p = parseFloat(document.getElementById('principal').value) || 0;
+  if (mode === 'reduced') {
+    document.getElementById('feeTransfer').value = 0.01;
+    document.getElementById('feeSBT').value      = 3.3;
+    document.getElementById('feeWHT').value      = 0.5;
+    document.getElementById('feeOther').value    = 0.03;
+  } else {
+    document.getElementById('feeTransfer').value = 2;
+    document.getElementById('feeSBT').value      = 3.3;
+    document.getElementById('feeWHT').value      = 1;
+    document.getElementById('feeOther').value    = 0.03;
+  }
+  document.getElementById('btn-reduced').classList.toggle('active', mode === 'reduced');
+  document.getElementById('btn-normal').classList.toggle('active', mode === 'normal');
+  calculate();
+}
+
+// Auto-calculate on load
+setLandFeeMode('reduced');
+</script>
+</body>
+</html>
